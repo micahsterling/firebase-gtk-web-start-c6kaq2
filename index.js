@@ -74,11 +74,15 @@ async function main() {
     if (user) {
       startRsvpButton.textContent = 'LOGOUT'
       //show guestbook when logged in
-      guestbookContainer.style.display = 'block'; 
+      guestbookContainer.style.display = 'block';
+      //Subscribe to the guestbook collection
+      subscribeGuestBook(); 
     } else {
       startRsvpButton.textContent = 'RSVP'
       //hide guestbook when not logged in
       guestbookContainer.style.display = 'none';
+      //Unsubscribe from the guestbook collection
+      unsubscribeGuestbook();
     }
   });
   //listen to the form submission
@@ -97,18 +101,28 @@ async function main() {
     return false;
   });
   //Create query for messages
-  const q = query(collection(db, 'guestbook'), orderBy('timestamp', 'desc'));
-  onSnapshot(q, snaps => {
-    //Reset page
-    guestbook.innerHTML = '';
-    //loop through documents in database
-    snaps.forEach(doc => {
-      console.log('loop')
-      //create an HTML entry for each document and add it to the chat
-      const entry = document.createElement('p');
-      entry.textContent = doc.data().name + ': ' + doc.data().text;
-      guestbook.appendChild(entry);
+  //Listen to guestbook updates
+  function subscribeGuestBook() {
+    const q = query(collection(db, 'guestbook'), orderBy('timestamp', 'desc'));
+    onSnapshot(q, snaps => {
+      //Reset page
+      guestbook.innerHTML = '';
+      //loop through documents in database
+      snaps.forEach(doc => {
+        console.log('loop')
+        //create an HTML entry for each document and add it to the chat
+        const entry = document.createElement('p');
+        entry.textContent = doc.data().name + ': ' + doc.data().text;
+        guestbook.appendChild(entry);
+      });
     });
-  });
+  }
+  //Unsubscribe from guestbook updates
+  function unsubscribeGuestbook() {
+    if (guestbookListener != null) {
+      guestbookListener();
+      guestbookListener = null;
+    }
+  }
 }
 main();

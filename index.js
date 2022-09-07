@@ -6,7 +6,7 @@ import { initializeApp } from 'firebase/app';
 
 // Add the Firebase products and methods that you want to use
 import {getAuth, EmailAuthProvider, signOut, onAuthStateChanged} from 'firebase/auth';
-import {getFirestore, addDoc, collection, query, orderBy, onSnapshot} from 'firebase/firestore';
+import {getFirestore, addDoc, collection, query, orderBy, onSnapshot, doc, setDoc, where} from 'firebase/firestore';
 
 import * as firebaseui from 'firebaseui';
 
@@ -100,29 +100,52 @@ async function main() {
     //Return false to avoid redirect
     return false;
   });
-  //Create query for messages
-  //Listen to guestbook updates
-  function subscribeGuestBook() {
-    const q = query(collection(db, 'guestbook'), orderBy('timestamp', 'desc'));
-    onSnapshot(q, snaps => {
-      //Reset page
-      guestbook.innerHTML = '';
-      //loop through documents in database
-      snaps.forEach(doc => {
-        console.log('loop')
-        //create an HTML entry for each document and add it to the chat
-        const entry = document.createElement('p');
-        entry.textContent = doc.data().name + ': ' + doc.data().text;
-        guestbook.appendChild(entry);
+  //Listen to RSVP response
+  rsvpYes.onClick = async () => {
+    //Get reference to user's document in attendees collection
+    const userRef = doc(db, 'attendees', auth.currentUser.uid);
+    try {
+      await setDoc(userRef, {
+        attending: true
       });
-    });
-  }
-  //Unsubscribe from guestbook updates
-  function unsubscribeGuestbook() {
-    if (guestbookListener != null) {
-      guestbookListener();
-      guestbookListener = null;
+    } catch (e) {
+      console.error(e);
     }
-  }
+  };
+  rsvpNo.onClick = async () => {
+    const userRef = doc(db, 'attendees', auth.currentUser.uid);
+    try {
+      await setDoc(userRef, {
+        attending: false
+      });
+    } catch (e) {
+      console.error(e);
+    }
+  };
 }
 main();
+
+//Create query for messages
+//Listen to guestbook updates
+function subscribeGuestBook() {
+  const q = query(collection(db, 'guestbook'), orderBy('timestamp', 'desc'));
+  onSnapshot(q, snaps => {
+    //Reset page
+    guestbook.innerHTML = '';
+    //loop through documents in database
+    snaps.forEach(doc => {
+      console.log('loop')
+      //create an HTML entry for each document and add it to the chat
+      const entry = document.createElement('p');
+      entry.textContent = doc.data().name + ': ' + doc.data().text;
+      guestbook.appendChild(entry);
+    });
+  });
+}
+//Unsubscribe from guestbook updates
+function unsubscribeGuestbook() {
+  if (guestbookListener != null) {
+    guestbookListener();
+    guestbookListener = null;
+  }
+}
